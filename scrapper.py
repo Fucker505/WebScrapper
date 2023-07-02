@@ -2,12 +2,27 @@ import asyncio
 import re
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
+from enum import Enum
 
 
-class GoogleScrapper:
-    def __init__(self, query):
+class SearchEngines(Enum):
+    GOOGLE = "https://www.google.com/search?q="
+    PAGE_GOOGLE = "&start="
+
+    ASK = "https://www.ask.com/web?q="
+    PAGE_ASK = "&page="
+
+
+class WebScrapper:
+    def __init__(self, query, search_engine=SearchEngines.GOOGLE):
         self.query = query
-        self.base_url = "https://www.google.com/search?q="
+        self.search_engine = search_engine
+        self.base_url = search_engine.value
+        if search_engine == SearchEngines.GOOGLE:
+            self.page = SearchEngines.PAGE_GOOGLE.value
+        elif search_engine == SearchEngines.ASK:
+            self.page = SearchEngines.PAGE_ASK.value
+
         self.headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36",
         }
@@ -37,29 +52,30 @@ class GoogleScrapper:
         urls = []
         for link in soup.find_all("a"):
             href = link.get("href")
-            if href and self.validate_url(href) and "google" not in href:
+            if href and self.validate_url(href):
                 urls.append(href)
         return urls
 
     async def scrape_url(self, url):
         html = await self.get_html(url)
-        # with open("test.html", "w", encoding="utf-8") as f:
-        # f.write(html)
         if "CAPTCHA" in html:
             raise Exception("Tu IP requiere realizar una prueba de CAPTCHA")
         return self.get_urls_from_html(html)
 
     async def scrape_urls(self, limit=10):
-        if not isinstance(limit, int) or limit not in range(10, 10000, 10):
-            raise ValueError(
-                "El límite debe ser un entero entre 10 y 10000 (de 10 en 10)"
-            )
+        if not isinstance(limit, int):
+            raise TypeError("El limite debe ser un entero")
+        if self.search_engine == SearchEngines.GOOGLE and limit not in range(10, 10000, 10):
+            raise ValueError("El límite debe ser un entero entre 10 y 10000 (de 10 en 10)")
+        elif self.search_engine == SearchEngines.ASK and (limit <= 0 or limit > 100):
+            raise ValueError("El límite debe estar en el rango de 1 y 100")
         urls = []
         tasks = []
         url = self.base_url + self.query
+        step = 10 if self.search_engine == SearchEngines.GOOGLE else 1
         tasks.append(self.scrape_url(url))
-        for i in range(10, limit, 10):
-            url_mod = url + "&start=" + str(i)
+        for i in range(step, limit, step):
+            url_mod = url + self.page + str(i)
             tasks.append(self.scrape_url(url_mod))
         results = await asyncio.gather(*tasks)
         for result in results:
