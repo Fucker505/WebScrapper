@@ -3,12 +3,15 @@ import re
 from aiohttp import ClientSession
 from bs4 import BeautifulSoup
 from enum import Enum
+from urllib.parse import unquote
 
 
 class SearchEngines(Enum):
     GOOGLE = "https://www.google.com/search?q="
     ASK = "https://www.ask.com/web?q="
     BING = "https://www.bing.com/search?q="
+    YAHOO = "https://search.yahoo.com/search?p="
+    ECOSIA = "https://www.ecosia.org/search?method=index&q="
 
 
 class WebScrapper:
@@ -21,7 +24,11 @@ class WebScrapper:
         elif search_engine == SearchEngines.ASK:
             self.page = "&page="
         elif search_engine == SearchEngines.BING:
-            self.page = "&first=6"
+            self.page = "&first="
+        elif search_engine == SearchEngines.YAHOO:
+            self.page = "&b="
+        elif search_engine == SearchEngines.ECOSIA:
+            self.page = "$p="
 
         self.headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36",
@@ -63,6 +70,16 @@ class WebScrapper:
                         or "support" in href
                     ):
                         continue
+                if self.search_engine == SearchEngines.YAHOO:
+                    try:
+                        ru = href.split("RU=")[1].split("RK=")[0]
+                        href = unquote(ru)
+                        if "yahoo" in href:
+                            continue
+                        if href.endswith("//"):
+                            href = href[0 : href.rfind("//")]
+                    except:
+                        continue
                 urls.append(href)
         return urls
 
@@ -81,8 +98,12 @@ class WebScrapper:
             raise ValueError(
                 "El límite debe ser un entero entre 10 y 10000 (de 10 en 10)"
             )
-        elif self.search_engine == SearchEngines.ASK and (limit <= 0 or limit > 100):
-            raise ValueError("El límite debe estar en el rango de 1 y 100")
+        elif (
+            self.search_engine == SearchEngines.ASK
+            or self.search_engine == SearchEngines.ECOSIA
+        ):
+            if limit <= 0 or limit > 100:
+                raise ValueError("El límite debe estar en el rango de 1 y 100")
         urls = []
         tasks = []
         url = self.base_url + self.query
@@ -96,8 +117,9 @@ class WebScrapper:
         results = await asyncio.gather(*tasks)
         for result in results:
             urls.extend(result)
-        return urls
+        return list(set(urls))
 
     def close(self):
         if self.client:
             asyncio.create_task(self.client.close())
+            self.client = None

@@ -1,34 +1,46 @@
 import asyncio
-from sys import exit as ex
 from scrapper import WebScrapper, SearchEngines
-from huepy import yellow, red
+from huepy import blue, red, purple, lgreen
 
 
 async def main():
     print(
-        """Motores de busqueda disponibles:
+        lgreen(
+            """Motores de busqueda disponibles:
 1. GOOGLE
 2. ASK
 3. BING
+4. YAHOO
+5. ECOSIA
+
+ELIGE EL NUMERO DEL MOTOR!
 """
+        )
     )
-    search_engine_input = input("Ingrese el motor de busqueda: ")
+    search_engine_input = input(blue("Ingrese el motor de busqueda: "))
     if search_engine_input == "1":
         search_engine = SearchEngines.GOOGLE
+        print("Motor de busqueda elegido: GOOGLE")
     elif search_engine_input == "2":
         search_engine = SearchEngines.ASK
     elif search_engine_input == "3":
         search_engine = SearchEngines.BING
-    else:
-        print(red("El motor de busqueda ingresado no es valido"))
-        ex()
+    elif search_engine_input == "4":
+        search_engine = SearchEngines.YAHOO
+    elif search_engine_input == "5":
+        search_engine = SearchEngines.ECOSIA
 
-    query = input("Ingrese la consulta: ")
-    remove = input("Desea remover las URLs innecesarias? (y/n): ").upper()
+    else:
+        print(red("El motor de busqueda ingresado no esta en nuestra lista de motores"))
+        return
+    print(purple("El motor de busqueda elegido es: " + search_engine.name + "\n"))
+
+    query = input(blue("Ingrese la consulta: "))
+    remove = input(blue("Desea remover las URLs innecesarias? (y/n): ")).upper()
     removeb = True if remove == "Y" else False
     scrapper = WebScrapper(query, search_engine=search_engine, remove_trash=removeb)
     try:
-        limit = int(input("Ingrese el limite: "))
+        limit = int(input(blue("Ingrese el limite: ")))
         urls = await scrapper.scrape_urls(limit)
         scrapper.close()
     except Exception as e:
@@ -36,16 +48,17 @@ async def main():
         scrapper.close()
         return
 
-    input_file = input("Desea generar un archivo con las URLs? (y/n): ")
+    input_file = input(blue("Desea generar un archivo con las URLs? (y/n): "))
     if input_file.upper() == "Y":
-        name_file = input("Ingrese el nombre del archivo: ")
+        name_file = input(blue("Ingrese el nombre del archivo: "))
+        open(name_file, "w").close()
         with open(name_file, "a", encoding="utf-8") as f:
             for url in urls:
                 f.write(url + "\n")
-        print(yellow("URLs guardas exitosamente en el archivo!"))
+        print(red("URLs guardas exitosamente en el archivo!"))
     else:
         for index, url in enumerate(urls):
-            print(yellow(f"[{index + 1}]"), red(url))
+            print(purple(f"[{index + 1}]"), red(url))
 
 
 if __name__ == "__main__":
