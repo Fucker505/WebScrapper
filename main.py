@@ -5,20 +5,28 @@ from huepy import yellow, red
 
 
 async def main():
-    print("""Motores de busqueda disponibles:
+    print(
+        """Motores de busqueda disponibles:
 1. GOOGLE
-2. ASK""")
+2. ASK
+3. BING
+"""
+    )
     search_engine_input = input("Ingrese el motor de busqueda: ")
     if search_engine_input == "1":
         search_engine = SearchEngines.GOOGLE
     elif search_engine_input == "2":
         search_engine = SearchEngines.ASK
+    elif search_engine_input == "3":
+        search_engine = SearchEngines.BING
     else:
         print(red("El motor de busqueda ingresado no es valido"))
         ex()
 
     query = input("Ingrese la consulta: ")
-    scrapper = WebScrapper(query, search_engine=search_engine)
+    remove = input("Desea remover las URLs innecesarias? (y/n): ").upper()
+    removeb = True if remove == "Y" else False
+    scrapper = WebScrapper(query, search_engine=search_engine, remove_trash=removeb)
     try:
         limit = int(input("Ingrese el limite: "))
         urls = await scrapper.scrape_urls(limit)
@@ -27,7 +35,7 @@ async def main():
         print(e)
         scrapper.close()
         return
-    
+
     input_file = input("Desea generar un archivo con las URLs? (y/n): ")
     if input_file.upper() == "Y":
         name_file = input("Ingrese el nombre del archivo: ")

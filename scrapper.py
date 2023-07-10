@@ -7,26 +7,27 @@ from enum import Enum
 
 class SearchEngines(Enum):
     GOOGLE = "https://www.google.com/search?q="
-    PAGE_GOOGLE = "&start="
-
     ASK = "https://www.ask.com/web?q="
-    PAGE_ASK = "&page="
+    BING = "https://www.bing.com/search?q="
 
 
 class WebScrapper:
-    def __init__(self, query, search_engine=SearchEngines.GOOGLE):
+    def __init__(self, query, search_engine=SearchEngines.GOOGLE, remove_trash=True):
         self.query = query
         self.search_engine = search_engine
         self.base_url = search_engine.value
         if search_engine == SearchEngines.GOOGLE:
-            self.page = SearchEngines.PAGE_GOOGLE.value
+            self.page = "&start="
         elif search_engine == SearchEngines.ASK:
-            self.page = SearchEngines.PAGE_ASK.value
+            self.page = "&page="
+        elif search_engine == SearchEngines.BING:
+            self.page = "&first=6"
 
         self.headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36",
         }
         self.client = None
+        self.remove_trash = remove_trash
 
     @staticmethod
     def validate_url(url):
@@ -53,6 +54,15 @@ class WebScrapper:
         for link in soup.find_all("a"):
             href = link.get("href")
             if href and self.validate_url(href):
+                if self.remove_trash:
+                    if (
+                        "microsoft" in href
+                        or "bing" in href
+                        or "google" in href
+                        or "ask" in href
+                        or "support" in href
+                    ):
+                        continue
                 urls.append(href)
         return urls
 
@@ -65,8 +75,12 @@ class WebScrapper:
     async def scrape_urls(self, limit=10):
         if not isinstance(limit, int):
             raise TypeError("El limite debe ser un entero")
-        if self.search_engine == SearchEngines.GOOGLE and limit not in range(10, 10000, 10):
-            raise ValueError("El límite debe ser un entero entre 10 y 10000 (de 10 en 10)")
+        if self.search_engine == SearchEngines.GOOGLE and limit not in range(
+            10, 10000, 10
+        ):
+            raise ValueError(
+                "El límite debe ser un entero entre 10 y 10000 (de 10 en 10)"
+            )
         elif self.search_engine == SearchEngines.ASK and (limit <= 0 or limit > 100):
             raise ValueError("El límite debe estar en el rango de 1 y 100")
         urls = []
@@ -75,6 +89,8 @@ class WebScrapper:
         step = 10 if self.search_engine == SearchEngines.GOOGLE else 1
         tasks.append(self.scrape_url(url))
         for i in range(step, limit, step):
+            if self.search_engine == SearchEngines.BING:
+                i *= 2
             url_mod = url + self.page + str(i)
             tasks.append(self.scrape_url(url_mod))
         results = await asyncio.gather(*tasks)
