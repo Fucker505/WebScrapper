@@ -11,7 +11,6 @@ async def main():
 2. ASK
 3. BING
 4. YAHOO
-5. ECOSIA
 
 ELIGE EL NUMERO DEL MOTOR!
 """
@@ -27,8 +26,6 @@ ELIGE EL NUMERO DEL MOTOR!
         search_engine = SearchEngines.BING
     elif search_engine_input == "4":
         search_engine = SearchEngines.YAHOO
-    elif search_engine_input == "5":
-        search_engine = SearchEngines.ECOSIA
 
     else:
         print(red("El motor de busqueda ingresado no esta en nuestra lista de motores"))

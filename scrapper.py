@@ -11,7 +11,6 @@ class SearchEngines(Enum):
     ASK = "https://www.ask.com/web?q="
     BING = "https://www.bing.com/search?q="
     YAHOO = "https://search.yahoo.com/search?p="
-    ECOSIA = "https://www.ecosia.org/search?method=index&q="
 
 
 class WebScrapper:
@@ -27,8 +26,6 @@ class WebScrapper:
             self.page = "&first="
         elif search_engine == SearchEngines.YAHOO:
             self.page = "&b="
-        elif search_engine == SearchEngines.ECOSIA:
-            self.page = "$p="
 
         self.headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36",
@@ -100,7 +97,6 @@ class WebScrapper:
             )
         elif (
             self.search_engine == SearchEngines.ASK
-            or self.search_engine == SearchEngines.ECOSIA
         ):
             if limit <= 0 or limit > 100:
                 raise ValueError("El límite debe estar en el rango de 1 y 100")
